@@ -1,19 +1,22 @@
 #ifndef _MA_MODEL_BASE_H_
 #define _MA_MODEL_BASE_H_
 
+#include <functional>
+
 #include "core/ma_common.h"
 
 #include "core/engine/ma_engine.h"
-
 namespace ma {
+
+typedef std::function<void(void* ctx)> ModelCallback;
 
 using namespace ma::engine;
 class Model {
 private:
     ma_perf_t perf_;
-    void (*p_preprocess_done_)(void* ctx);
-    void (*p_postprocess_done_)(void* ctx);
-    void (*p_underlying_run_done_)(void* ctx);
+    ModelCallback p_preprocess_done_;
+    ModelCallback p_postprocess_done_;
+    ModelCallback p_run_done_;
     void* p_user_ctx_;
     ma_model_type_t m_type_;
 
@@ -32,11 +35,11 @@ public:
     ma_model_type_t getType() const;
     virtual ma_err_t setConfig(ma_model_cfg_opt_t opt, ...) = 0;
     virtual ma_err_t getConfig(ma_model_cfg_opt_t opt, ...) = 0;
-    void setPreprocessDone(void (*fn)(void* ctx));
-    void setPostprocessDone(void (*fn)(void* ctx));
-    void setRunDone(void (*fn)(void* ctx));
+    void setPreprocessDone(ModelCallback cb);
+    void setPostprocessDone(ModelCallback cb);
+    void setRunDone(ModelCallback cb);
     void setUserCtx(void* ctx);
 };
-}  // namespace ma::model
+}  // namespace ma
 
 #endif /* _MA_ALGO_H_ */

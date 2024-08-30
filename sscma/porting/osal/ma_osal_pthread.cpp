@@ -67,6 +67,15 @@ void Thread::sleep(ma_tick_t tick) {
     }
 }
 
+void Thread::enterCritical() {
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
+}
+
+void Thread::exitCritical() {
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
+}
+
+
 Thread::Thread(const char* name,
                void (*entry)(void*),
                uint32_t priority,
@@ -83,8 +92,7 @@ Thread::Thread(const char* name,
 
 void Thread::threadEntryPoint(void) {
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
-    
-    //pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, nullptr);
     if (m_entry != nullptr) {
         m_entry(m_arg);
     }
@@ -110,6 +118,10 @@ bool Thread::start(void* arg) {
 
     int result = 0;
     m_arg      = arg;
+
+    if (m_started) {
+        return false;
+    }
 
     result = pthread_create(&m_thread, nullptr, threadEntryPointStub, this);
     pthread_setname_np(m_thread, m_name.c_str());

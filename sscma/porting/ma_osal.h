@@ -45,6 +45,8 @@ public:
     static void sleep(ma_tick_t tick);
     static void yield();
     static ma_thread_t* self();
+    static void enterCritical();
+    static void exitCritical();
 
 protected:
     virtual void threadEntryPoint(void);

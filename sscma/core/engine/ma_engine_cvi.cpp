@@ -69,13 +69,12 @@ static const ma_tensor_type_t mapped_tensor_types[] = {
     MA_TENSOR_TYPE_U8,
 };
 
-EngineCVI::EngineCVI() {
-    model = nullptr;
-}
+EngineCVI::EngineCVI() : model(nullptr), input_tensors(nullptr), output_tensors(nullptr), input_num(0), output_num(0) {}
 
 EngineCVI::~EngineCVI() {
     if (model != nullptr) {
         CVI_NN_CleanupModel(model);
+        model = nullptr;
     }
 }
 
@@ -84,7 +83,7 @@ ma_err_t EngineCVI::init() {
 }
 
 ma_err_t EngineCVI::init(size_t size) {
-
+    CVI_NN_Global_SetSharedMemorySize(size);
     return MA_OK;
 }
 
@@ -159,7 +158,6 @@ ma_err_t EngineCVI::run() {
 
     return ret;
 }
-
 
 ma_tensor_t EngineCVI::getInput(int32_t index) {
     MA_ASSERT(model != nullptr);
@@ -276,6 +274,19 @@ int32_t EngineCVI::getOutputNum(const char* name) {
         }
     }
     return -1;
+}
+
+ma_err_t EngineCVI::setInput(int32_t index, const ma_tensor_t& tensor) {
+    MA_ASSERT(model != nullptr);
+    if (index >= input_num) {
+        return MA_EINVAL;
+    }
+    if (tensor.is_physical) {
+        CVI_NN_SetTensorPhysicalAddr(&input_tensors[index], tensor.data.addr);
+    } else {
+        CVI_NN_SetTensorPtr(&input_tensors[index], tensor.data.data);
+    }
+    return MA_OK;
 }
 
 

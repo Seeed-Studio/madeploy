@@ -13,11 +13,9 @@ Model* ModelFactory::create(Engine* engine) {
     }
 
     if (YoloV5::isValid(engine)) {
-        MA_LOGI(TAG, "create yolov5 model");
         return new YoloV5(engine);
     }
     if (Classifier::isValid(engine)) {
-        MA_LOGI(TAG, "create classifier model");
         return new Classifier(engine);
     }
 

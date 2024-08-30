@@ -41,6 +41,8 @@ public:
     virtual ma_quant_param_t getInputQuantParam(int32_t index)  = 0;
     virtual ma_quant_param_t getOutputQuantParam(int32_t index) = 0;
 
+    virtual ma_err_t setInput(int32_t index, const ma_tensor_t& tensor) = 0;
+
 #if MA_USE_ENGINE_TENSOR_NAME
     virtual int32_t getInputNum(const char* name)  = 0;
     virtual int32_t getOutputNum(const char* name) = 0;

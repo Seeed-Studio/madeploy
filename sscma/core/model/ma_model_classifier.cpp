@@ -75,7 +75,9 @@ const ma_img_t* Classifier::getInputImg() {
 
 ma_err_t Classifier::preprocess() {
     ma_err_t ret = MA_OK;
-
+    if(input_img_ == nullptr) {
+        return MA_OK;
+    }
     ret = ma::cv::convert(input_img_, &img_);
     if (ret != MA_OK) {
         return ret;
@@ -123,7 +125,7 @@ const std::forward_list<ma_class_t>& Classifier::getResults() {
 
 
 ma_err_t Classifier::run(const ma_img_t* img) {
-    MA_ASSERT(img != nullptr);
+    //MA_ASSERT(img != nullptr);
     input_img_ = img;
     return underlyingRun();
 }

@@ -92,7 +92,9 @@ typedef struct {
         int64_t* s64;
         float* f32;
         double* f64;
+        uint64_t addr;
     } data;
+    bool is_physical;
     bool is_variable;  // For constant tensor
 } ma_tensor_t;
 
@@ -123,7 +125,7 @@ typedef struct {
     uint16_t height;
     ma_pixel_format_t format;
     ma_pixel_rotate_t rotate;
-    uint8_t* data;
+    uint8_t* data;  // virtual address
 } ma_img_t;
 
 typedef struct {
@@ -220,7 +222,8 @@ typedef enum {
     MA_TRANSPORT_I2C     = 4,
     MA_TRANSPORT_MQTT    = 5,
     MA_TRANSPORT_TCP     = 6,
-    MA_TRANSPORT_UDP     = 7
+    MA_TRANSPORT_UDP     = 7,
+    MA_TRANSPORT_RTSP    = 8,
 } ma_transport_type_t;
 
 typedef enum {
@@ -246,7 +249,7 @@ typedef enum {
     MA_MODEL_TYPE_YOLOV8      = 6u,
     MA_MODEL_TYPE_NVIDIA_DET  = 7u,
     MA_MODEL_TYPE_YOLO_WORLD  = 8u,
-}  ma_model_type_t;
+} ma_model_type_t;
 
 typedef struct {
     uint8_t id;
