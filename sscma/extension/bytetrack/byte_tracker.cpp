@@ -22,8 +22,12 @@
 
 using namespace std;
 
-BYTETracker::BYTETracker(
-    int frame_rate, int track_buffer, float track_thresh, float high_thresh, float match_thresh, float scale_factor) {
+BYTETracker::BYTETracker(int frame_rate,
+                         int track_buffer,
+                         float track_thresh,
+                         float high_thresh,
+                         float match_thresh,
+                         float scale_factor) {
     this->track_thresh = track_thresh;
     this->high_thresh  = high_thresh;
     this->match_thresh = match_thresh;
@@ -57,6 +61,13 @@ vector<int> BYTETracker::inplace_update(vector<ma_bbox_t>& objects) {
     objects.shrink_to_fit();
 
     return res;
+}
+void BYTETracker::clear() {
+    frame_id = 0;
+
+    tracked_stracks.clear();
+    lost_stracks.clear();
+    removed_stracks.clear();
 }
 
 vector<STrack> BYTETracker::update(const vector<ma_bbox_t>& objects) {

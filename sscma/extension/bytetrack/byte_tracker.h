@@ -27,6 +27,7 @@ public:
     ~BYTETracker();
 
     std::vector<int> inplace_update(std::vector<ma_bbox_t>& objects);
+    void clear();
 
 protected:
     std::vector<STrack> update(const std::vector<ma_bbox_t>& objects);
