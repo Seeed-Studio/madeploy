@@ -6,6 +6,7 @@ namespace ma {
 static const char* TAG = "ma::transport::rtsp";
 
 std::unordered_map<int, CVI_RTSP_CTX*> TransportRTSP::s_contexts;
+std::unordered_map<int, UserAuthenticationDatabase*> TransportRTSP::s_auths;
 std::unordered_map<int, std::vector<CVI_RTSP_SESSION*>> TransportRTSP::s_sessions;
 
 TransportRTSP::TransportRTSP()
@@ -28,7 +29,11 @@ static void onConnectStub(const char* ip, void* arg) {
 static void onDisconnectStub(const char* ip, void* arg) {
     MA_LOGD(TAG, "rtsp disconnected: %s", ip);
 }
-ma_err_t TransportRTSP::open(int port, const std::string name, ma_pixel_format_t format) {
+ma_err_t TransportRTSP::open(int port,
+                             const std::string name,
+                             const std::string user,
+                             const std::string pass,
+                             ma_pixel_format_t format) {
     ma_err_t ret;
     Guard guard(m_mutex);
 
@@ -40,6 +45,9 @@ ma_err_t TransportRTSP::open(int port, const std::string name, ma_pixel_format_t
     if (m_opened) {
         return MA_EBUSY;
     }
+
+    m_user = user;
+    m_pass = pass;
 
     if (s_contexts.find(port) == s_contexts.end()) {
         CVI_RTSP_CONFIG config = {0};
@@ -60,10 +68,22 @@ ma_err_t TransportRTSP::open(int port, const std::string name, ma_pixel_format_t
 
         CVI_RTSP_SetListener(m_ctx, &listener);
 
+        RTSPServer* server               = static_cast<RTSPServer*>(m_ctx->server);
+        UserAuthenticationDatabase* auth = new UserAuthenticationDatabase();
+        if (auth == nullptr) {
+            CVI_RTSP_Destroy(&m_ctx);
+            return MA_ENOMEM;
+        }
+        server->setAuthenticationDatabase(auth);
+        s_auths[port] = auth;
         MA_LOGV(TAG, "rtsp sever created: %d", port);
-
     } else {
         m_ctx = s_contexts[port];
+    }
+
+    if (m_user.size() > 0 && m_pass.size() > 0) {
+        MA_LOGI(TAG, "rtsp user: %s pass: %s", m_user.c_str(), m_pass.c_str());
+        s_auths[port]->addUserRecord(m_user.c_str(), m_pass.c_str());
     }
 
     for (auto& session : s_sessions[port]) {
@@ -90,6 +110,7 @@ ma_err_t TransportRTSP::open(int port, const std::string name, ma_pixel_format_t
             return MA_EINVAL;
     }
 
+
     snprintf(attr.name, sizeof(attr.name), "%s", name.c_str());
 
     CVI_RTSP_CreateSession(m_ctx, &attr, &m_session);
@@ -113,6 +134,7 @@ ma_err_t TransportRTSP::close() {
     if (!m_opened) {
         return MA_EINVAL;
     }
+    s_auths[m_port]->removeUserRecord(m_user.c_str());
     CVI_RTSP_DestroySession(m_ctx, m_session);
 
     MA_LOGI(TAG, "rtsp session destroyed: %d/%s", m_port, m_name.c_str());
@@ -124,6 +146,12 @@ ma_err_t TransportRTSP::close() {
 
     if (s_sessions[m_port].empty()) {
         MA_LOGV(TAG, "rtsp server destroy: %d", m_port);
+        RTSPServer* server = static_cast<RTSPServer*>(m_ctx->server);
+        auto* old          = server->setAuthenticationDatabase(nullptr);
+        if (old) {
+            delete old;
+        }
+
         CVI_RTSP_Stop(m_ctx);
         CVI_RTSP_Destroy(&m_ctx);
         s_contexts.erase(m_port);

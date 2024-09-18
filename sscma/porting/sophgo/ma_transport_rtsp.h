@@ -1,9 +1,11 @@
 #ifndef _MA_TRANSPORT_RTSP_H
 #define _MA_TRANSPORT_RTSP_H
 
-#include <sscma.h>
-
+#include <BasicUsageEnvironment.hh>
+#include <liveMedia.hh>
 #include <rtsp.h>
+
+#include <sscma.h>
 
 namespace ma {
 
@@ -15,6 +17,8 @@ public:
 
     ma_err_t open(int port,
                   const std::string name   = "live",
+                  const std::string user   = "",
+                  const std::string pass   = "",
                   ma_pixel_format_t format = MA_PIXEL_FORMAT_H264);
     ma_err_t close();
 
@@ -31,11 +35,14 @@ private:
     int m_port;
     std::string m_name;
     std::atomic<bool> m_opened;
+    std::string m_user;
+    std::string m_pass;
     CVI_RTSP_SESSION* m_session;
     CVI_RTSP_CTX* m_ctx;
     Mutex m_mutex;
     std::vector<std::string> m_ip_list;
     static std::unordered_map<int, CVI_RTSP_CTX*> s_contexts;
+    static std::unordered_map<int, UserAuthenticationDatabase*> s_auths;
     static std::unordered_map<int, std::vector<CVI_RTSP_SESSION*>> s_sessions;
 };
 
