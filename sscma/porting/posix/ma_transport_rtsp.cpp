@@ -63,15 +63,17 @@ ma_err_t TransportRTSP::init(const void* config) noexcept {
         listener.argDisconn              = this;
 
         CVI_RTSP_SetListener(m_ctx, &listener);
+        if (m_user.size() > 0 && m_pass.size() > 0) {
 
-        RTSPServer* server               = static_cast<RTSPServer*>(m_ctx->server);
-        UserAuthenticationDatabase* auth = new UserAuthenticationDatabase();
-        if (auth == nullptr) {
-            CVI_RTSP_Destroy(&m_ctx);
-            return MA_ENOMEM;
+            RTSPServer* server               = static_cast<RTSPServer*>(m_ctx->server);
+            UserAuthenticationDatabase* auth = new UserAuthenticationDatabase();
+            if (auth == nullptr) {
+                CVI_RTSP_Destroy(&m_ctx);
+                return MA_ENOMEM;
+            }
+            server->setAuthenticationDatabase(auth);
+            s_auths[m_port] = auth;
         }
-        server->setAuthenticationDatabase(auth);
-        s_auths[m_port] = auth;
         MA_LOGV(TAG, "rtsp sever created: %d", m_port);
     } else {
         m_ctx = s_contexts[m_port];
@@ -125,7 +127,7 @@ void TransportRTSP::deInit() noexcept {
     if (!m_initialized) {
         return;
     }
-    s_auths[m_port]->removeUserRecord(m_user.c_str());
+    //s_auths[m_port]->removeUserRecord(m_user.c_str());
     CVI_RTSP_DestroySession(m_ctx, m_session);
 
     MA_LOGI(TAG, "rtsp session destroyed: %d/%s", m_port, m_name.c_str());
