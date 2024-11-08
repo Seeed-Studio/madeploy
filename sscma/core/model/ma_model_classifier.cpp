@@ -58,10 +58,13 @@ bool Classifier::isValid(Engine* engine) {
 
     const auto& output_shape{engine->getOutputShape(0)};
 
-    if (output_shape.size != 2 ||     // N, C
-        output_shape.dims[0] != 1 ||  // N = 1
+    if (output_shape.dims[0] != 1 ||  // N = 1
         output_shape.dims[1] < 2      // C >= 2
     ) {
+        return false;
+    }
+
+    if (output_shape.size == 4 && (output_shape.dims[2] != 1 || output_shape.dims[3] != 1)) {
         return false;
     }
 
@@ -107,6 +110,16 @@ ma_err_t Classifier::postprocess() {
             if (score > threshold_score_)
                 results_.emplace_front(ma_class_t{score, i});
         }
+    }
+    if (output_.type == MA_TENSOR_TYPE_F32) {
+        auto* data = output_.data.f32;
+        auto pred_l{output_.shape.dims[1]};
+        for (decltype(pred_l) i{0}; i < pred_l; ++i) {
+            auto score{data[i]};
+            if (score > threshold_score_)
+                results_.emplace_front(ma_class_t{score, i});
+        }
+
     } else {
         return MA_ENOTSUP;
     }
