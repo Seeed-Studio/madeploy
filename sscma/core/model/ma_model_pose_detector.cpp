@@ -49,6 +49,10 @@ ma_err_t PoseDetector::preprocess() {
     return ret;
 }
 
+const ma_img_t* PoseDetector::getInputImg() {
+    return &img_;
+}
+
 ma_err_t PoseDetector::run(const ma_img_t* img) {
     MA_ASSERT(img != nullptr);
 

@@ -18,6 +18,7 @@
 #include "ma_model_pfld.h"
 #include "ma_model_yolo_world.h"
 #include "ma_model_yolo11.h"
+#include "ma_model_yolo11_pose.h"
 
 namespace ma {
 
