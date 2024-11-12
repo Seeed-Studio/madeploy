@@ -35,7 +35,7 @@ const std::vector<ma_point_t>& PointDetector::getResults() const { return result
 ma_err_t PointDetector::preprocess() {
     ma_err_t ret = MA_OK;
 
-    ret = ma::cv::convert(input_img_, &img_);
+    ret = ma::scv::convert(input_img_, &img_);
     if (ret != MA_OK) {
         return ret;
     }

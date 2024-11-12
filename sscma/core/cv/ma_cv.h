@@ -3,7 +3,7 @@
 
 #include "core/ma_common.h"
 
-namespace ma::cv {
+namespace ma::scv {
 
 #ifdef __cplusplus
 extern "C" {

@@ -15,5 +15,13 @@
 #define CONFIG_MA_TRANSPORT_MQTT 1
 #endif
 
+#define ma_malloc                       malloc
+#define ma_calloc                       calloc
+#define ma_realloc                      realloc
+#define ma_free                         free
+#define ma_printf                       printf
+#define ma_abort                        abort
+#define ma_reset                        abort
+
 
 #endif /* _EL_CONFIG_H_ */

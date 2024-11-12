@@ -303,11 +303,9 @@ OpsResolver::OpsResolver() {
 namespace ma::engine {
 
 static const ma_tensor_type_t mapped_tensor_types[] = {
-    MA_TENSOR_TYPE_NONE, MA_TENSOR_TYPE_F32, MA_TENSOR_TYPE_S32,  MA_TENSOR_TYPE_U8,
-    MA_TENSOR_TYPE_S64,  MA_TENSOR_TYPE_STR, MA_TENSOR_TYPE_BOOL, MA_TENSOR_TYPE_S16,
-    MA_TENSOR_TYPE_NONE, MA_TENSOR_TYPE_S8,  MA_TENSOR_TYPE_F16,  MA_TENSOR_TYPE_F64,
-    MA_TENSOR_TYPE_NONE, MA_TENSOR_TYPE_S64, MA_TENSOR_TYPE_NONE, MA_TENSOR_TYPE_NONE,
-    MA_TENSOR_TYPE_U32,  MA_TENSOR_TYPE_U64, MA_TENSOR_TYPE_NONE, MA_TENSOR_TYPE_BF16,
+    MA_TENSOR_TYPE_NONE, MA_TENSOR_TYPE_F32,  MA_TENSOR_TYPE_S32, MA_TENSOR_TYPE_U8,  MA_TENSOR_TYPE_S64,  MA_TENSOR_TYPE_STR,  MA_TENSOR_TYPE_BOOL,
+    MA_TENSOR_TYPE_S16,  MA_TENSOR_TYPE_NONE, MA_TENSOR_TYPE_S8,  MA_TENSOR_TYPE_F16, MA_TENSOR_TYPE_F64,  MA_TENSOR_TYPE_NONE, MA_TENSOR_TYPE_S64,
+    MA_TENSOR_TYPE_NONE, MA_TENSOR_TYPE_NONE, MA_TENSOR_TYPE_U32, MA_TENSOR_TYPE_U64, MA_TENSOR_TYPE_NONE, MA_TENSOR_TYPE_BF16,
 };
 
 
@@ -390,8 +388,7 @@ ma_err_t EngineTFLite::load(const void* model_data, size_t model_size) {
 
     static tflite::OpsResolver resolver;
 
-    interpreter = new tflite::MicroInterpreter(
-        model, resolver, static_cast<uint8_t*>(memory_pool.pool), memory_pool.size);
+    interpreter = new tflite::MicroInterpreter(model, resolver, static_cast<uint8_t*>(memory_pool.pool), memory_pool.size);
     if (interpreter == nullptr) {
         return MA_ENOMEM;
     }
@@ -542,7 +539,7 @@ ma_err_t EngineTFLite::load(const char* model_path) {
     ma_err_t ret = MA_OK;
     size_t size  = 0;
 #ifdef MA_USE_FILESYSTEM_POSIX
-    if(model_file != nullptr) {
+    if (model_file != nullptr) {
         delete model_file;
         model_file = nullptr;
     }

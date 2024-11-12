@@ -36,7 +36,7 @@ const std::vector<ma_keypoint3f_t>& PoseDetector::getResults() const { return re
 ma_err_t PoseDetector::preprocess() {
     ma_err_t ret = MA_OK;
 
-    ret = ma::cv::convert(input_img_, &img_);
+    ret = ma::scv::convert(input_img_, &img_);
     if (ret != MA_OK) {
         return ret;
     }

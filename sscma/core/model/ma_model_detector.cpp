@@ -39,7 +39,7 @@ ma_err_t Detector::preprocess() {
         return MA_OK;
     }
 
-    ret = ma::cv::convert(input_img_, &img_);
+    ret = ma::scv::convert(input_img_, &img_);
     if (ret != MA_OK) {
         return ret;
     }

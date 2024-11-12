@@ -3,6 +3,7 @@
 
 #include "core/ma_common.h"
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -10,6 +11,7 @@ extern "C" {
 #include <csignal>
 #include <pthread.h>
 #include <time.h>
+
 
 #define MA_WAIT_FOREVER 0xFFFFFFFF
 

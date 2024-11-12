@@ -4,7 +4,7 @@
 #include "JPEGENC.h"
 #endif
 
-namespace ma::cv {
+namespace ma::scv {
 
 static const char* TAG = "ma::cv";
 
