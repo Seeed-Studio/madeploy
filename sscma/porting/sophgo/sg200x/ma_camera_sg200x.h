@@ -24,7 +24,6 @@ class CameraSG200X final : public Camera {
         bool configured;
         bool enabled;
         MessageBox* queue;
-        Semaphore sem;
     } channel;
 
 public:

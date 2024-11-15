@@ -21,7 +21,6 @@ static const presets_wrapper_t _presets[] = {
     {"1280x720 @ 5fps", 1280, 720, 5},
 };
 
-
 #define CAMERA_INIT()                               \
     {                                               \
         Thread::enterCritical();                    \
@@ -103,24 +102,28 @@ int CameraSG200X::vpssCallback(void* pData, void* pArgs) {
         return CVI_SUCCESS;
     }
     ma_img_t* frame  = new ma_img_t;
-    frame->physical  = true;
-    frame->data      = reinterpret_cast<uint8_t*>(f->u64PhyAddr);
+    frame->physical  = false;
     frame->size      = f->u32Length[0] + f->u32Length[1] + f->u32Length[2];
+    frame->data      = new uint8_t[f->u32Length[0] + f->u32Length[1] + f->u32Length[2]];
     frame->width     = m_channels[pstVencChnCfg->VencChn].width;
     frame->height    = m_channels[pstVencChnCfg->VencChn].height;
     frame->format    = m_channels[pstVencChnCfg->VencChn].format;
     frame->timestamp = Tick::current();
     frame->count     = 1;
     frame->index     = 1;
-    if (m_channels[pstVencChnCfg->VencChn].format == MA_PIXEL_FORMAT_H264) {
-        frame->key = true;
-    }
-    if (!m_channels[pstVencChnCfg->VencChn].queue->post(frame, Tick::fromMilliseconds(1000 / m_channels[pstVencChnCfg->VencChn].fps))) {
-        m_channels[pstVencChnCfg->VencChn].sem.signal();
-        delete frame;
+
+    uint32_t offset = 0;
+    for (int i = 0; i < 3; i++) {
+        if (f->u32Length[i]) {
+            f->pu8VirAddr[i] = (CVI_U8*)CVI_SYS_Mmap(f->u64PhyAddr[i], f->u32Length[i]);
+            memcpy(frame->data + offset, f->pu8VirAddr[i], f->u32Length[i]);
+            CVI_SYS_Munmap(f->pu8VirAddr[i], f->u32Length[i]);
+            offset += f->u32Length[i];
+        }
     }
 
-    if (m_channels[pstVencChnCfg->VencChn].sem.wait(Tick::fromMilliseconds(2000)) == false) {
+    if (!m_channels[pstVencChnCfg->VencChn].queue->post(frame, Tick::fromMilliseconds(1000 / m_channels[pstVencChnCfg->VencChn].fps))) {
+        delete[] frame->data;
         delete frame;
     }
 
@@ -232,7 +235,7 @@ ma_err_t CameraSG200X::startStream(StreamMode mode) noexcept {
                     return MA_ENOTSUP;
                     break;
             }
-            MA_LOGD(TAG, "width: %d, height: %d, fps: %d format: %d", param.width, param.height, param.fps, param.format);
+            MA_LOGI(TAG, "width: %d, height: %d, fps: %d format: %d", param.width, param.height, param.fps, param.format);
             setupVideo(static_cast<video_ch_index_t>(i), &param);
 
             if (m_channels[i].queue != nullptr) {
@@ -263,6 +266,7 @@ void CameraSG200X::stopStream() noexcept {
     m_streaming = false;
     CAMERA_DEINIT();
 }
+
 
 ma_err_t CameraSG200X::commandCtrl(CtrlType ctrl, CtrlMode mode, CtrlValue& value) noexcept {
     if (!m_initialized) [[unlikely]] {
@@ -352,19 +356,6 @@ ma_err_t CameraSG200X::retrieveFrame(ma_img_t& frame, ma_pixel_format_t format) 
 void CameraSG200X::returnFrame(ma_img_t& frame) noexcept {
     if (!frame.physical) {
         delete[] frame.data;
-    } else {
-        int chn = 0;
-        switch (frame.format) {
-            case MA_PIXEL_FORMAT_JPEG:
-                chn = 1;
-                break;
-            case MA_PIXEL_FORMAT_H264:
-                chn = 2;
-                break;
-            default:
-                break;
-        }
-        m_channels[chn].sem.signal();
     }
 }
 
