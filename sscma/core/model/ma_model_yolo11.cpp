@@ -17,10 +17,6 @@ Yolo11::Yolo11(Engine* p_engine_) : Detector(p_engine_, "Yolo11", MA_MODEL_TYPE_
 
     const auto& input_shape = p_engine_->getInputShape(0);
 
-    for (size_t i = 0; i < 6; ++i) {
-        outputs_[i] = p_engine_->getOutput(i);
-    }
-
     int n = input_shape.dims[0], h = input_shape.dims[1], w = input_shape.dims[2], c = input_shape.dims[3];
     bool is_nhwc = c == 3 || c == 1;
 
@@ -31,7 +27,18 @@ Yolo11::Yolo11(Engine* p_engine_) : Detector(p_engine_, "Yolo11", MA_MODEL_TYPE_
     int s = w >> 5, m = w >> 4, l = w >> 3;
 
     num_record_ = (s * s + m * m + l * l);
-    num_class_  = outputs_[1].shape.dims[1];
+
+    if (p_engine_->getOutputSize() == 1) {
+        is_single   = true;
+        outputs_[0] = p_engine_->getOutput(0);
+        num_class_  = outputs_[0].shape.dims[1] - 4;
+    } else {
+        for (size_t i = 0; i < 6; ++i) {
+            outputs_[i] = p_engine_->getOutput(i);
+        }
+        num_class_ = outputs_[1].shape.dims[1];
+    }
+    MA_LOGI(TAG, "num_record: %d, num_class: %d", num_record_, num_class_);
 }
 
 Yolo11::~Yolo11() {}
@@ -41,7 +48,7 @@ bool Yolo11::isValid(Engine* engine) {
     const auto inputs_count  = engine->getInputSize();
     const auto outputs_count = engine->getOutputSize();
 
-    if (inputs_count != 1 || outputs_count < 6) {
+    if (inputs_count != 1 || (outputs_count != 1 && outputs_count != 6)) {
         return false;
     }
     const auto& input_shape = engine->getInputShape(0);
@@ -64,14 +71,21 @@ bool Yolo11::isValid(Engine* engine) {
     int ibox_len = (s * s + m * m + l * l);
 
     // Validate output shape
-    for (size_t i = 0; i < 6; i += 2) {
-        auto box_shape = engine->getOutputShape(i);
-        auto cls_shape = engine->getOutputShape(i + 1);
-        if (box_shape.size != 4 || box_shape.dims[0] != 1 || box_shape.dims[1] != 64 || box_shape.dims[2] != (w >> (i / 2) + 3) || box_shape.dims[3] != (w >> (i / 2) + 3)) {
+    if (outputs_count == 1) {
+        auto output_shape = engine->getOutputShape(0);
+        if (output_shape.size < 3 || output_shape.dims[0] != 1 || output_shape.dims[2] != ibox_len || output_shape.dims[1] < 5) {
             return false;
         }
-        if (cls_shape.size != 4 || cls_shape.dims[0] != 1 || cls_shape.dims[2] != (w >> (i / 2) + 3) || cls_shape.dims[3] != (w >> (i / 2) + 3)) {
-            return false;
+    } else {
+        for (size_t i = 0; i < 6; i += 2) {
+            auto box_shape = engine->getOutputShape(i);
+            auto cls_shape = engine->getOutputShape(i + 1);
+            if (box_shape.size != 4 || box_shape.dims[0] != 1 || box_shape.dims[1] != 64 || box_shape.dims[2] != (w >> (i / 2) + 3) || box_shape.dims[3] != (w >> (i / 2) + 3)) {
+                return false;
+            }
+            if (cls_shape.size != 4 || cls_shape.dims[0] != 1 || cls_shape.dims[2] != (w >> (i / 2) + 3) || cls_shape.dims[3] != (w >> (i / 2) + 3)) {
+                return false;
+            }
         }
     }
 
@@ -223,6 +237,79 @@ ma_err_t Yolo11::postProcessF32() {
             }
         }
     }
+    return MA_OK;
+}
+
+ma_err_t Yolo11::postProcessF32Single() {
+    auto* data = outputs_[0].data.f32;
+    for (decltype(num_record_) i = 0; i < num_record_; ++i) {
+
+        float max  = threshold_score_;
+        int target = -1;
+        for (int c = 0; c < num_class_; c++) {
+            float score = data[i + num_record_ * (4 + c)];
+            if (score < max) [[likely]] {
+                continue;
+            }
+            max    = score;
+            target = c;
+        }
+
+        if (target < 0)
+            continue;
+
+        float x = data[i];
+        float y = data[i + num_record_];
+        float w = data[i + num_record_ * 2];
+        float h = data[i + num_record_ * 3];
+
+        ma_bbox_t box;
+        box.score  = max;
+        box.target = target;
+        box.x      = x / img_.width;
+        box.y      = y / img_.height;
+        box.w      = w / img_.width;
+        box.h      = h / img_.height;
+
+        results_.emplace_front(std::move(box));
+    }
+
+    return MA_OK;
+}
+
+ma_err_t Yolo11::postProcessI8Single() {
+    auto* data = outputs_[0].data.s8;
+    for (decltype(num_record_) i = 0; i < num_record_; ++i) {
+
+        float max  = threshold_score_;
+        int target = -1;
+        for (int c = 0; c < num_class_; c++) {
+            float score = ma::math::dequantizeValue(data[i + (c + 4) * num_record_], outputs_[0].quant_param.scale, outputs_[0].quant_param.zero_point);
+            if (score < max) [[likely]] {
+                continue;
+            }
+            max    = score;
+            target = c;
+        }
+
+        if (target < 0)
+            continue;
+
+        float x = ma::math::dequantizeValue(data[i], outputs_[0].quant_param.scale, outputs_[0].quant_param.zero_point);
+        float y = ma::math::dequantizeValue(data[i + num_record_], outputs_[0].quant_param.scale, outputs_[0].quant_param.zero_point);
+        float w = ma::math::dequantizeValue(data[i + num_record_ * 2], outputs_[0].quant_param.scale, outputs_[0].quant_param.zero_point);
+        float h = ma::math::dequantizeValue(data[i + num_record_ * 3], outputs_[0].quant_param.scale, outputs_[0].quant_param.zero_point);
+
+        ma_bbox_t box;
+        box.score  = max;
+        box.target = target;
+        box.x      = x / img_.width;
+        box.y      = y / img_.height;
+        box.w      = w / img_.width;
+        box.h      = h / img_.height;
+
+        results_.emplace_front(std::move(box));
+    }
 
 
     return MA_OK;
@@ -233,9 +320,17 @@ ma_err_t Yolo11::postprocess() {
     results_.clear();
 
     if (outputs_[0].type == MA_TENSOR_TYPE_F32) {
-        err = postProcessF32();
+        if (is_single) {
+            err = postProcessF32Single();
+        } else {
+            err = postProcessF32();
+        }
     } else if (outputs_[0].type == MA_TENSOR_TYPE_S8) {
-        err = postProcessI8();
+        if (is_single) {
+            err = postProcessI8Single();
+        } else {
+            err = postProcessI8();
+        }
     } else {
         return MA_ENOTSUP;
     }

@@ -12,12 +12,16 @@ private:
     ma_tensor_t outputs_[6];
     int32_t num_record_;
     int32_t num_class_;
+    bool is_single;
 
 protected:
     ma_err_t postprocess() override;
 
     ma_err_t postProcessI8();
     ma_err_t postProcessF32();
+
+    ma_err_t postProcessF32Single();
+    ma_err_t postProcessI8Single();
 
 
 public:
