@@ -129,6 +129,7 @@ typedef struct {
     uint8_t index;
     uint8_t count;
     bool physical;  // For physical frame
+    std::vector<std::pair<void*, size_t>> blocks;
     uint8_t* data;
 } ma_img_t;
 
@@ -201,6 +202,15 @@ struct ma_keypoint2f_t {
     std::vector<ma_pt2f_t> pts;
 };
 
+struct ma_segm2f_t {
+    ma_bbox_t box;
+    struct {
+        uint16_t width;
+        uint16_t height;
+        std::vector<uint8_t> data;
+    } mask;
+};
+
 struct ma_keypoint3f_t {
     ma_bbox_t box;
     std::vector<ma_pt3f_t> pts;
@@ -237,6 +247,18 @@ typedef enum {
 
 typedef enum { MA_MSG_TYPE_RESP = 0, MA_MSG_TYPE_EVT = 1, MA_MSG_TYPE_LOG = 2, MA_MSG_TYPE_REQ = 3, MA_MSG_TYPE_HB = 4 } ma_msg_type_t;
 
+
+typedef enum { MA_MODEL_INPUT_TYPE_UNKNOWN = 0, MA_MODEL_INPUT_TYPE_IMAGE = 0x1000, MA_MODEL_INPUT_TYPE_AUDIO = 0x2000 } ma_model_input_type_t;
+
+typedef enum {
+    MA_MODEL_TASK_NONE     = 0,
+    MA_MODEL_TASK_CLASSIFY = 0x0100,
+    MA_MODEL_TASK_DETECT   = 0x0200,
+    MA_MODEL_TASK_POSE     = 0x0300,
+    MA_MODEL_TASK_SEG      = 0x0400,
+    MA_MODEL_TASK_KEYPOINT = 0x05000
+} ma_model_task_type_t;
+
 typedef enum {
     MA_MODEL_TYPE_UNDEFINED   = 0u,
     MA_MODEL_TYPE_FOMO        = 1u,
@@ -247,10 +269,14 @@ typedef enum {
     MA_MODEL_TYPE_YOLOV8      = 6u,
     MA_MODEL_TYPE_NVIDIA_DET  = 7u,
     MA_MODEL_TYPE_YOLO_WORLD  = 8u,
-    MA_MODEL_TYPE_YOLO11     = 9u,
-    MA_MODEL_TYPE_YOLO11_POSE = 10u
+    MA_MODEL_TYPE_YOLO11      = 9u,
+    MA_MODEL_TYPE_YOLO11_POSE = 10u,
+    MA_MODEL_TYPE_YOLO11_SEG  = 11u
 } ma_model_type_t;
 
+#define MA_MODEL_INPUT_TYPE_MASK (0xF000)
+#define MA_MODEL_TASK_TYPE_MASK  (0x0F00)
+#define MA_MODEL_TYPE_MASK       (0x00FF)
 typedef struct {
     uint8_t id;
     uint32_t size;

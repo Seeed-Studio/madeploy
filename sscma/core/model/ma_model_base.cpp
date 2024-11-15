@@ -4,7 +4,7 @@ namespace ma {
 
 constexpr char TAG[] = "ma::model";
 
-Model::Model(Engine* engine, const char* name, ma_model_type_t type)
+Model::Model(Engine* engine, const char* name, uint16_t type)
     : p_engine_(engine),
       p_name_(name),
       m_type_(type),
@@ -69,7 +69,14 @@ const char* Model::getName() const {
 }
 
 ma_model_type_t Model::getType() const {
-    return m_type_;
+    return static_cast<ma_model_type_t>(m_type_ & MA_MODEL_TYPE_MASK);
+}
+
+ma_model_input_type_t Model::getInputType() const {
+    return static_cast<ma_model_input_type_t>(m_type_ & MA_MODEL_INPUT_TYPE_MASK);
+}
+ma_model_task_type_t Model::getTaskType() const {
+    return static_cast<ma_model_task_type_t>(m_type_ & MA_MODEL_TASK_TYPE_MASK);
 }
 
 void Model::setPreprocessDone(std::function<void(void*)> func) {
@@ -95,4 +102,4 @@ public:
 };
 
 
-}  // namespace ma::model
+}  // namespace ma

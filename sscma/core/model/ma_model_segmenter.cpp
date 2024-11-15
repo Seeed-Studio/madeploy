@@ -1,12 +1,12 @@
-#include "ma_model_pose_detector.h"
+#include "ma_model_segmenter.h"
 
 #include "core/cv/ma_cv.h"
 
 namespace ma::model {
 
-constexpr char TAG[] = "ma::model::pose_detecor";
+constexpr char TAG[] = "ma::model::segmenter";
 
-PoseDetector::PoseDetector(Engine* p_engine, const char* name, ma_model_type_t type) : Model(p_engine, name, MA_MODEL_INPUT_TYPE_IMAGE | MA_MODEL_TASK_POSE | type) {
+Segmenter::Segmenter(Engine* p_engine, const char* name, ma_model_type_t type) : Model(p_engine, name, MA_MODEL_INPUT_TYPE_IMAGE | MA_MODEL_TASK_SEG | type) {
     input_           = p_engine_->getInput(0);
     threshold_nms_   = 0.45;
     threshold_score_ = 0.25;
@@ -18,6 +18,7 @@ PoseDetector::PoseDetector(Engine* p_engine, const char* name, ma_model_type_t t
         img_.width  = input_.shape.dims[2];
         img_.size   = input_.shape.dims[1] * input_.shape.dims[2] * input_.shape.dims[3];
         img_.format = input_.shape.dims[3] == 3 ? MA_PIXEL_FORMAT_RGB888 : MA_PIXEL_FORMAT_GRAYSCALE;
+
     } else {
         img_.height = input_.shape.dims[2];
         img_.width  = input_.shape.dims[3];
@@ -28,13 +29,8 @@ PoseDetector::PoseDetector(Engine* p_engine, const char* name, ma_model_type_t t
     img_.data = input_.data.u8;
 }
 
-PoseDetector::~PoseDetector() {}
-
-const std::vector<ma_keypoint3f_t>& PoseDetector::getResults() const {
-    return results_;
-}
-
-ma_err_t PoseDetector::preprocess() {
+Segmenter::~Segmenter() {}
+ma_err_t Segmenter::preprocess() {
     ma_err_t ret = MA_OK;
 
     ret = ma::cv::convert(input_img_, &img_);
@@ -50,11 +46,15 @@ ma_err_t PoseDetector::preprocess() {
     return ret;
 }
 
-const ma_img_t* PoseDetector::getInputImg() {
+const ma_img_t* Segmenter::getInputImg() {
     return &img_;
 }
 
-ma_err_t PoseDetector::run(const ma_img_t* img) {
+const std::forward_list<ma_segm2f_t>& Segmenter::getResults() const {
+    return results_;
+}
+
+ma_err_t Segmenter::run(const ma_img_t* img) {
     MA_ASSERT(img != nullptr);
 
     input_img_ = img;
@@ -62,7 +62,7 @@ ma_err_t PoseDetector::run(const ma_img_t* img) {
     return underlyingRun();
 }
 
-ma_err_t PoseDetector::setConfig(ma_model_cfg_opt_t opt, ...) {
+ma_err_t Segmenter::setConfig(ma_model_cfg_opt_t opt, ...) {
     ma_err_t ret = MA_OK;
     va_list args;
     va_start(args, opt);
@@ -83,7 +83,7 @@ ma_err_t PoseDetector::setConfig(ma_model_cfg_opt_t opt, ...) {
     return ret;
 }
 
-ma_err_t PoseDetector::getConfig(ma_model_cfg_opt_t opt, ...) {
+ma_err_t Segmenter::getConfig(ma_model_cfg_opt_t opt, ...) {
     ma_err_t ret = MA_OK;
     va_list args;
     void* p_arg = nullptr;

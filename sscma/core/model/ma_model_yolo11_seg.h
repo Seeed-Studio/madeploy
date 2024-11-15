@@ -1,18 +1,21 @@
-#ifndef _MA_MODEL_YOLO11_H
-#define _MA_MODEL_YOLO11_H
+#ifndef _MA_MODEL_YOLO11_SEG_H_
+#define _MA_MODEL_YOLO11_SEG_H_
 
+#include <cstddef>
+#include <cstdint>
+#include <utility>
 #include <vector>
 
-#include "ma_model_detector.h"
+#include "ma_model_segmenter.h"
 
 namespace ma::model {
 
-class Yolo11 : public Detector {
+class Yolo11Seg : public Segmenter {
 private:
-    ma_tensor_t outputs_[6];
+    ma_tensor_t bboxes_;
+    ma_tensor_t protos_;
     int32_t num_record_;
     int32_t num_class_;
-    bool is_single;
 
 protected:
     ma_err_t postprocess() override;
@@ -20,13 +23,10 @@ protected:
     ma_err_t postProcessI8();
     ma_err_t postProcessF32();
 
-    // ma_err_t postProcessF32Single();
-    // ma_err_t postProcessI8Single();
-
-
 public:
-    Yolo11(Engine* engine);
-    ~Yolo11();
+    Yolo11Seg(Engine* engine);
+    ~Yolo11Seg();
+
     static bool isValid(Engine* engine);
 };
 

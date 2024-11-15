@@ -9,7 +9,7 @@ namespace ma::model {
 constexpr char TAG[] = "ma::model::detecor";
 
 Detector::Detector(Engine* p_engine, const char* name, ma_model_type_t type)
-    : Model(p_engine, name, type),
+    : Model(p_engine, name, MA_MODEL_INPUT_TYPE_IMAGE | MA_MODEL_TASK_DETECT | type),
       input_(p_engine->getInput(0)),  // Use direct method call instead of p_engine_->
       threshold_nms_(0.45),
       threshold_score_(0.25) {

@@ -6,7 +6,7 @@ namespace ma::model {
 
 constexpr char TAG[] = "ma::model::classifier";
 
-Classifier::Classifier(Engine* p_engine) : Model(p_engine, "IMCLS", MA_MODEL_TYPE_IMCLS) {
+Classifier::Classifier(Engine* p_engine) : Model(p_engine, "IMCLS", MA_MODEL_INPUT_TYPE_IMAGE | MA_MODEL_TASK_CLASSIFY | MA_MODEL_TYPE_IMCLS) {
     input_           = p_engine_->getInput(0);
     output_          = p_engine_->getOutput(0);
     threshold_score_ = 0.5f;

@@ -6,7 +6,7 @@
 
 namespace ma::model {
 
-FOMO::FOMO(Engine* p_engine_) : Detector(p_engine_, "fomo", MA_MODEL_TYPE_FOMO) {
+FOMO::FOMO(Engine* p_engine_) : Detector(p_engine_, "fomo",  MA_MODEL_TYPE_FOMO) {
     MA_ASSERT(p_engine_ != nullptr);
 }
 
